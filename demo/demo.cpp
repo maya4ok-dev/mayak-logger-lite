@@ -1,22 +1,29 @@
 #include <mayak/logger-lite.hpp>
 
 int main() {
-    
+    using namespace mayak::logger_lite;
 
-    // API is actually simple. I mean, there's no need to do anything special.
+    // Basic usage
+    MAYAK_LOG(DEBUG) << "This is a debug message.";
+    MAYAK_LOG(INFO) << "Logger initialized successfully.";
+    MAYAK_LOG(WARNING) << "Low disk space warning!";
+    MAYAK_LOG(ERROR) << "Failed to open file.";
+    MAYAK_LOG(FATAL) << "Critical error! System shutting down.";
 
-    // Using default levels
-    MAYAK_LOG(DEBUG) << "Hello, world!";
-    MAYAK_LOG(INFO) << "Hello, world!";
-    MAYAK_LOG(WARNING) << "Hello, world!";
-    MAYAK_LOG(ERROR) << "Hello, world!";
-    MAYAK_LOG(FATAL) << "Hello, world!";
+    // Change logger state
+    setMinLogLevel(40); // Only WARNING and above
+    MAYAK_LOG(DEBUG) << "This debug message will NOT appear.";
+    MAYAK_LOG(ERROR) << "But this error will be logged.";
 
-    // Adding a new level
-    mayak::logger_lite::Level verbose = {"VERBOSE", {255, 255, 255}, 5};
-    MAYAK_LOG(verbose) << "Hello, world!";
 
-    // Temporary Level object won't work because it gets destroyed immediately,
-    // leaving a dangling reference inside Logger. NEVER DO THIS:
-    // MAYAK_LOG({ "VERBOSE", {255, 255, 255}, 5 }) << "Goodbye, world!";
+    // Disable coloring
+    setMinLogLevel(0);
+    setColoring(false);
+    MAYAK_LOG(INFO) << "Coloring is disabled now.";
+
+    // Add a custom level
+    Level VERBOSE{"VERBOSE", {128, 128, 128}, 10};
+    MAYAK_LOG(VERBOSE) << "This is a custom verbose message.";
+
+    return 0;
 }

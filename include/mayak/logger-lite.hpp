@@ -15,6 +15,13 @@
     #error "This library requires C++17 or higher!"
 #endif
 
+#if !defined(MAYAK_LOGGER_LITE_DISABLE_WINDOWS_VT) && defined(_WIN32)
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
+    #include <windows.h>
+#endif
+
 #include <sstream>
 #include <iostream>
 #include <cstdint>
@@ -26,6 +33,22 @@ namespace mayak::logger_lite {
         std::atomic<bool> enabled{true};
         std::atomic<bool> colored{true};
         std::atomic<int> minLogLevel{0};
+
+        LoggerState() {
+            #ifndef MAYAK_LOGGER_LITE_DISABLE_WINDOWS_VT
+                #ifdef _WIN32
+                    // I hate Windows, but it's what it is
+                    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+                    if (hOut != INVALID_HANDLE_VALUE) {
+                        DWORD dwMode = 0;
+                        if (GetConsoleMode(hOut, &dwMode)) {
+                            dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                            SetConsoleMode(hOut, dwMode);
+                        }
+                    }
+                #endif
+            #endif
+        }
     } state;
 
     [[nodiscard]] inline bool isEnabled() { return state.enabled.load(std::memory_order_relaxed); }
