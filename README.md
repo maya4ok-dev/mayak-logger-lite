@@ -8,11 +8,12 @@ Built for speed, simplicity, and zero-dependency usage.
 ## ✨ Features
 
 - **Header-only** – just include one file.
-- **Blazing fast** – up to **5.6M logs/sec** with no output.
+- **Blazing fast** – up to **10M logs/sec** with no output.
 - **Atomic state** – thread-safe runtime enable/disable and minimum log level control.
 - **Color support** – RGB log coloring (with Windows VT auto-init).
 - **Custom levels** – add your own log levels at runtime.
 - **Zero dependencies** – works with just the standard library.
+- **Truncation handling** – long messages will be truncated and marked with `[TRUNCATED]`.
 
 ---
 
@@ -28,7 +29,7 @@ git submodule add https://github.com/maya4ok-dev/mayak-logger-lite.git external/
 
 ```cmake
 add_subdirectory(external/mayak-logger-lite)
-target_link_libraries(&{PROJECT_NAME} PRIVATE mayak-logger-lite)
+target_link_libraries(${PROJECT_NAME} PRIVATE mayak-logger-lite)
 ```
 
 ### 3. Usage
@@ -41,10 +42,10 @@ int main() {
     MAYAK_LOG(INFO) << "Logger initialized successfully.";
     MAYAK_LOG(WARNING) << "Low disk space warning!";
     MAYAK_LOG(ERROR) << "Failed to open file.";
-    MAYAK_LOG(FATAL) << "Critical error!";
+    MAYAK_LOG(FATAL) << "Critical error! System shutting down.";
 
     mayak::logger_lite::Level VERBOSE{"VERBOSE", {255, 255, 255}, 10};
-    MAYAK_LOG(VERBOSE) << "Custom verbose message";
+    MAYAK_LOG(VERBOSE) << "This is a custom verbose message.";
 
     return 0;
 }
@@ -53,13 +54,11 @@ int main() {
 ### 4. Output
 
 ```log
-[DEBUG] This is a debug message.
+[DEBUG] Hello, world!
 [INFO] Logger initialized successfully.
 [WARNING] Low disk space warning!
 [ERROR] Failed to open file.
 [FATAL] Critical error! System shutting down.
-[ERROR] But this error will be logged.
-[INFO] Coloring is disabled now.
 [VERBOSE] This is a custom verbose message.
 ```
 
@@ -67,8 +66,8 @@ int main() {
 
 | Mode           | 1M messages | Logs/sec      |
 | -------------- | ----------- | ------------- |
-| With output    | \~7.4 s     | \~135k logs/s |
-| Without output | \~176 ms    | \~5.6M logs/s |
+| With output    | \~8.6 s     | \~115k logs/s |
+| Without output | \~96 ms     | \~10M logs/s  |
 
 ---
 
