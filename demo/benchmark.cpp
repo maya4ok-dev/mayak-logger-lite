@@ -16,8 +16,8 @@ void bench_with_output(int count) {
 
 void bench_without_output(int count) {
     // Временно отключаем вывод, просто делаем "пустой" логгер
-    bool old_enabled = mayak::logger_lite::isEnabled();
-    mayak::logger_lite::setEnabled(false);
+    bool old_enabled = mayak::lite::logger::enabled();
+    mayak::lite::logger::enabled(false);
 
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < count; ++i) {
@@ -25,7 +25,7 @@ void bench_without_output(int count) {
     }
     auto end = std::chrono::high_resolution_clock::now();
 
-    mayak::logger_lite::setEnabled(old_enabled);
+    mayak::lite::logger::enabled(old_enabled);
 
     std::chrono::duration<double, std::milli> duration = end - start;
     std::cout << "Without output: Logged " << count << " messages in " << duration.count() << " ms\n";
