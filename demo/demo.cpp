@@ -1,5 +1,6 @@
 #include <mayak/logger-lite.hpp>
 #include <string>
+#include <memory>
 
 int main() {
     using namespace mayak::lite::logger;
@@ -46,7 +47,7 @@ int main() {
     // --- 6. Numbers and different types ---
     MAYAK_LOG(INFO) << "Integer: " << 12345;
     MAYAK_LOG(INFO) << "Negative: " << -9876;
-    MAYAK_LOG(INFO) << "Double (will be cast to int): " << 3.14159;
+    MAYAK_LOG(INFO) << "Double: " << 3.14159;
     MAYAK_LOG(INFO) << "String: " << "Hello Logger!";
 
     // --- 7. Using mayak::log() directly with file/line ---
@@ -55,6 +56,14 @@ int main() {
     mayak::log(WARNING, __FILE__, __LINE__) << "Direct call with file/line";
     mayak::log(ERROR, __FILE__, __LINE__)   << "Direct call with file/line";
     mayak::log(FATAL, __FILE__, __LINE__)   << "Direct call with file/line";
+
+    // --- 8. Non-supported types ---
+    MAYAK_LOG(INFO) << "Created Level: " << VERBOSE;
+    MAYAK_LOG(INFO) << "Created unique_ptr: " << std::make_unique<int>(42);
+    MAYAK_LOG(INFO) << "Created shared_ptr: " << std::make_shared<int>(42);
+    int* raw_ptr = new int(42);
+    MAYAK_LOG(INFO) << "Created raw_ptr: " << raw_ptr;
+    delete raw_ptr;
 
     return 0;
 }

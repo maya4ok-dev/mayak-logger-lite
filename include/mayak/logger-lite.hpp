@@ -31,6 +31,20 @@
 #include <cstdio>
 #include <cstring>
 
+#if __has_include(<cxxabi.h>)
+    #include <cxxabi.h>
+    #include <memory>
+
+    [[nodiscard]] inline std::string demangle(const char* name) {
+        int status = 0;
+        std::unique_ptr<char[], void(*)(void*)> res{
+            abi::__cxa_demangle(name, nullptr, nullptr, &status),
+            std::free
+        };
+        return (status == 0) ? res.get() : name;
+    }
+#endif
+
 namespace mayak::lite::logger {
 
 inline struct LoggerState {
@@ -125,15 +139,41 @@ class Logger {
     }
 
 public:
+
     template<typename T>
-    Logger& operator<<(const T& t) {
-        if constexpr(std::is_arithmetic_v<T>) {
+    Logger& operator<<(T&& t) {
+        using U = std::remove_reference_t<T>;
+
+        if constexpr (std::is_arithmetic_v<U>) {
             appendValue(t);
-        } else if constexpr(std::is_convertible_v<T, std::string_view>) {
+        } else if constexpr (std::is_convertible_v<U, std::string_view>) {
             append(std::string_view(t));
+        } else if constexpr (std::is_pointer_v<U>) {
+            append("[");
+            #if __has_include(<cxxabi.h>)
+                append(demangle(typeid(*t).name()));
+            #else
+                append(typeid(*t).name());
+            #endif
+            append(" @ ");
+            char tmp[32];
+            snprintf(tmp, sizeof(tmp), "%p", t);
+            append(tmp);
+            append("]");
         } else {
-            static_assert(sizeof(T) == 0, "Unsupported type");
+            append("[");
+            #if __has_include(<cxxabi.h>)
+                append(demangle(typeid(t).name()));
+            #else
+                append(typeid(t).name());
+            #endif
+            append(" @ ");
+            char tmp[32];
+            snprintf(tmp, sizeof(tmp), "%p", (const void*)&t);
+            append(tmp);
+            append("]");
         }
+
         return *this;
     }
 
