@@ -30,6 +30,7 @@
 #include <type_traits>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 
 #if __has_include(<cxxabi.h>)
     #include <cxxabi.h>
@@ -51,6 +52,7 @@ inline struct LoggerState {
     std::atomic<bool> enabled{true};
     std::atomic<bool> colored{true};
     std::atomic<int> minLevelPriority{0};
+    std::mutex mtx;
 
     LoggerState() {
         #if !defined(MAYAK_LOGGER_LITE_DISABLE_WINDOWS_VT) && defined(_WIN32)
@@ -90,7 +92,6 @@ struct Level {
 
 class Logger {
     static constexpr size_t BUFF_SIZE = 256;
-    static constexpr size_t TRUNC_LEN = 12; // Length of "[TRUNCATED]" string
     char buff[BUFF_SIZE];
     size_t pos = 0;
     Level level;
@@ -102,20 +103,18 @@ class Logger {
         constexpr char TRUNC[] = "[TRUNCATED]";
         constexpr size_t TRUNC_LEN = sizeof(TRUNC) - 1;
 
-        size_t available = BUFF_SIZE - pos - 1; // оставшееся место для символов + '\0'
+        size_t available = BUFF_SIZE - pos - 1;
 
         if (str.size() > available) {
-            size_t copy_len = available > TRUNC_LEN ? available - TRUNC_LEN : 0; // сколько реально можно скопировать
+            size_t copy_len = available > TRUNC_LEN ? available - TRUNC_LEN : 0;
             if (copy_len > 0) {
                 memcpy(buff + pos, str.data(), copy_len);
                 pos += copy_len;
             }
-            // добавляем "[TRUNCATED]", если есть место
             if (pos + TRUNC_LEN < BUFF_SIZE) {
                 memcpy(buff + pos, TRUNC, TRUNC_LEN);
                 pos += TRUNC_LEN;
             } else if (pos < BUFF_SIZE - 1) {
-                // если места меньше, добавляем частично
                 size_t part = BUFF_SIZE - 1 - pos;
                 memcpy(buff + pos, TRUNC, part);
                 pos += part;
@@ -188,6 +187,8 @@ public:
     ~Logger() {
         if (!active) return;
 
+        std::lock_guard<std::mutex> lock(state.mtx);
+
         std::string_view filename;
         if (file) {
             filename = file;
@@ -213,14 +214,37 @@ public:
 } // namespace mayak::lite::logger
 
 namespace mayak {
-inline lite::logger::Logger log(lite::logger::Level level) {
-    return lite::logger::Logger(level);
-}
-inline lite::logger::Logger log(lite::logger::Level level, const char* file, int line) {
-    return lite::logger::Logger(level, file, line);
-}
+
+/// @brief Logs a message at the specified level to the console
+/// @param level The logging level, e.g., DEBUG, INFO, WARNING, ERROR 
+/// @details This function returns a Logger instance that can be used to log messages.
+///
+/// Usage example:
+/// @code
+/// mayak::log(INFO) << "This is an info message";
+/// @endcode
+inline lite::logger::Logger log(lite::logger::Level level) { return lite::logger::Logger(level); }
+
+/// @brief Logs a message at the specified level to the console using the specified file and line number
+/// @param level The logging level, e.g., DEBUG, INFO, WARNING, ERROR 
+/// @details This function returns a Logger instance that can be used to log messages.
+///
+/// Usage example:
+/// @code
+/// mayak::log(INFO, __FILE__, __LINE__) << "This is an info message";
+/// @endcode
+inline lite::logger::Logger log(lite::logger::Level level, const char* file, int line) { return lite::logger::Logger(level, file, line); }
+
 }
 
+/// @def MAYAK_LOG
+/// @brief Logs a message at the specified level to the console with file and line number
+/// @param level The logging level, e.g., DEBUG, INFO, WARNING, ERROR
+/// @details This macro expands to a call to the log function with the current file and line number.
+///
+/// @code
+/// MAYAK_LOG(INFO) << "This is an info message";
+/// @endcode
 #define MAYAK_LOG(level) mayak::log(level, __FILE__, __LINE__)
 
 #ifndef MAYAK_LOGGER_LITE_DISABLE_DEFAULT_LEVELS
